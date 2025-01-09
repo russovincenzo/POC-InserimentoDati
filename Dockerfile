@@ -39,7 +39,7 @@ RUN dotnet restore
 COPY . .
 
 # Copia i file buildati del frontend nella cartella wwwroot
-COPY --from=build-frontend /app/frontend/build/ ./wwwroot/
+COPY --from=build-frontend /app/wwwroot/ ./wwwroot/
 
 # Build del backend
 RUN dotnet publish -c Release -o out
