@@ -20,6 +20,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Debug: verifica che la directory di build esista
+RUN ls -l
 RUN ls -l /app
 RUN ls -l /app/frontend
 RUN ls -l /app/frontend/build
