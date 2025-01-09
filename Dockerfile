@@ -19,6 +19,9 @@ COPY frontend/ .
 # Build del frontend React
 RUN npm run build
 
+# Debug: verifica che la directory di build esista
+RUN ls -l /app/frontend/build
+
 # Fase 2: Costruzione e pubblicazione dell'app .NET
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-backend
 
