@@ -26,8 +26,6 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
-
 app.MapGet("/software", async (string query, [FromServices] SoftwareDbContext context) =>
     {
         if (string.IsNullOrWhiteSpace(query))
