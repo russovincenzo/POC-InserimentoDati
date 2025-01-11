@@ -1,0 +1,12 @@
+# Exported from Render on 2025-01-11T09:45:53Z
+services:
+- type: web
+  name: POC-InserimentoDati
+  runtime: docker
+  repo: https://github.com/russovincenzo/POC-InserimentoDati
+  plan: free
+  region: frankfurt
+  dockerContext: .
+  dockerfilePath: ./Dockerfile
+  autoDeploy: false
+version: "1"
