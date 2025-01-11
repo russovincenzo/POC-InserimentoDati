@@ -53,7 +53,9 @@ COPY --from=build-backend /app/out ./
 # Imposta gli URL per HTTP e HTTPS
 ENV ASPNETCORE_URLS="http://0.0.0.0:5000;https://0.0.0.0:5001"
 ENV ASPNETCORE_ENVIRONMENT=Development
-
+# Imposta la variabile di ambiente per la connection string
+ARG CONNECTION_STRING
+ENV ConnectionStrings__DefaultConnection=$CONNECTION_STRING
 # Espone le porte HTTP e HTTPS
 EXPOSE 5000
 EXPOSE 5001

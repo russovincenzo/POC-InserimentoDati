@@ -4,12 +4,13 @@ using POC_InserimentoDati;
 using POC_InserimentoDati.SoftwareApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var postgresqlServerName = Environment.GetEnvironmentVariable("POSTGRES_SERVER_NAME") ?? builder.Configuration["PostgresServerName"];
+builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(string.Format(builder.Configuration.GetConnectionString("DefaultConnection"), postgresqlServerName)));
 var app = builder.Build();
 
 // Servire i file statici
@@ -28,11 +29,31 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/software", ([FromServices] SoftwareDbContext context) =>
-{
-    return context.Softwares.ToListAsync();
-})
-.WithOpenApi();
+app.MapGet("/software", async (string query, [FromServices] SoftwareDbContext context) =>
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Results.Ok(await context.Softwares.ToListAsync());
+        }
+
+        var results = await context.Softwares
+            .Where(s =>
+                (s.SoftwareId != null && EF.Functions.ILike(s.SoftwareId, $"%{query}%")) ||
+                (s.Name != null && EF.Functions.ILike(s.Name, $"%{query}%")) ||
+                (s.Manufacturer != null && EF.Functions.ILike(s.Manufacturer, $"%{query}%")) ||
+                (s.Website != null && EF.Functions.ILike(s.Website, $"%{query}%")) ||
+                (s.License != null && EF.Functions.ILike(s.License, $"%{query}%")) ||
+                (s.Version != null && EF.Functions.ILike(s.Version, $"%{query}%")) ||
+                (s.ProgrammingLanguage != null && EF.Functions.ILike(s.ProgrammingLanguage, $"%{query}%")) ||
+                (s.HardwareSpecifications != null && EF.Functions.ILike(s.HardwareSpecifications, $"%{query}%")) ||
+                (s.SoftwareSpecifications != null && EF.Functions.ILike(s.SoftwareSpecifications, $"%{query}%")) ||
+                (s.Function != null && EF.Functions.ILike(s.Function, $"%{query}%")))
+            .ToListAsync();
+
+        return Results.Ok(results);
+    })
+    .WithOpenApi();
+
 
 app.MapGet("/software/{id:int}", async (int id, [FromServices] SoftwareDbContext context) =>
 {

@@ -11,8 +11,18 @@ public class SoftwareModel
     public string? Website { get; set; }                   // "PyQt5 by Riverbank Computing"
     public string? License { get; set; }                   // "Commercial License @@to be attached?"
     public string? Version { get; set; }                   // "5.15.11"
-    public DateTime? ReleaseDate { get; set; }             // "Jul 19, 2024"
-    public DateTime? EndOfSupportDate { get; set; }        // "May 26, 2025"
+    public DateTime? ReleaseDate
+    {
+        get => _releaseDate;
+        set => _releaseDate = value.SetKindUtc();
+    }
+    private DateTime? _releaseDate;
+    private DateTime? _endOfSupportDate;
+    public DateTime? EndOfSupportDate
+    {
+        get => _endOfSupportDate;
+        set => _endOfSupportDate = value.SetKindUtc();
+    }        // "May 26, 2025"
     public string? ProgrammingLanguage { get; set; }       // "Python, C++"
     public string? Units { get; set; }                     // "All units of Item 1"
     public string? HardwareSpecifications { get; set; }    // "-"
@@ -26,4 +36,24 @@ public class SoftwareModel
     public string? MeasuresToPreventIncorrectVersion { get; set; } // "-"
     public string? Storage { get; set; }                   // "PyQt5 source code"
     public string? Documentation { get; set; }             // "PyQt5 documentation"
+}
+
+public static class DateTimeExtensions
+{
+    public static DateTime? SetKindUtc(this DateTime? dateTime)
+    {
+        if (dateTime.HasValue)
+        {
+            return dateTime.Value.SetKindUtc();
+        }
+        else
+        {
+            return null;
+        }
+    }
+    public static DateTime SetKindUtc(this DateTime dateTime)
+    {
+        if (dateTime.Kind == DateTimeKind.Utc) { return dateTime; }
+        return DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+    }
 }
