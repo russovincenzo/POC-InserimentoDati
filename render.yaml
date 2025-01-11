@@ -9,4 +9,7 @@ services:
   dockerContext: .
   dockerfilePath: ./Dockerfile
   autoDeploy: false
+  envVars: # Environment variables
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # Prompt for a value in the Render Dashboard
 version: "1"
