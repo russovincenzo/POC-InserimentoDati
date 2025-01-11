@@ -51,7 +51,7 @@ WORKDIR /app
 COPY --from=build-backend /app/out ./
 
 # Imposta gli URL per HTTP e HTTPS
-ENV ASPNETCORE_URLS="https://0.0.0.0:5001,http://0.0.0.0:5000"
+ENV ASPNETCORE_URLS="https://0.0.0.0:5001;http://0.0.0.0:5000"
 ENV ASPNETCORE_ENVIRONMENT=Development
 
 # Espone le porte HTTPS
