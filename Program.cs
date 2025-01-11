@@ -9,8 +9,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-var postgresqlServerName = Environment.GetEnvironmentVariable("POSTGRES_SERVER_NAME") ?? builder.Configuration["PostgresServerName"];
-builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(string.Format(builder.Configuration.GetConnectionString("DefaultConnection"), postgresqlServerName)));
+builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(builder.Configuration.BuildConnectionString()));
 var app = builder.Build();
 
 // Servire i file statici
