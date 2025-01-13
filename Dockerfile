@@ -29,7 +29,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-backend
 WORKDIR /app/backend
 
 # Copia i file necessari del backend
-COPY ./*.csproj ./
+COPY ./backend/*.csproj ./
 RUN dotnet restore
 
 # Copia tutto il progetto
