@@ -26,7 +26,7 @@ RUN ls -l /app/wwwroot/
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-backend
 
 # Imposta la directory di lavoro per il backend
-WORKDIR /app
+WORKDIR /app/backend
 
 # Copia i file necessari del backend
 COPY ./*.csproj ./

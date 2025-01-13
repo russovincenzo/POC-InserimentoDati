@@ -20,7 +20,7 @@
   
 	<Target Name="BuildReactApp" AfterTargets="Build" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
 		<Message Importance="high" Text="Current directory: $(MSBuildProjectDirectory)" />
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)\frontend" Command="npm install &amp;&amp; npm run build" />
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)\..\frontend" Command="npm install &amp;&amp; npm run build" />
 	</Target>
 
 </Project>
