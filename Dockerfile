@@ -48,7 +48,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
 # Copia il risultato della build del backend
-COPY --from=build-backend /app/out ./
+COPY --from=build-backend /app/backend/out ./
 
 # Imposta gli URL per HTTP e HTTPS
 ENV ASPNETCORE_URLS="https://0.0.0.0:5001;http://0.0.0.0:5000"
