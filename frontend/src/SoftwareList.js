@@ -95,7 +95,7 @@ function SoftwareList() {
 
     const handleServerError = (message, error) => {
         console.error(message, error);
-        toast.error(`${message}: ${error.response?.data?.message || error.response?.data || "Errore inatteso"}`, {
+        toast.error(`${message}: ${error.response?.data?.message || "Errore inatteso"}`, {
             autoClose: 10000,
         });
     };
