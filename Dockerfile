@@ -20,7 +20,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Debug: verifica che la directory di wwwroot esista
-RUN ls -l /app/wwwroot/
+RUN ls -l /app/backend/wwwroot/
 
 # Fase 2: Costruzione e pubblicazione dell'app .NET
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-backend
