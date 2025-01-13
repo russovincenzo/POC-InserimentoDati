@@ -9,7 +9,13 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-scripts": "^5.0.1",
-    "react-toastify": "^11.0.2"
+    "react-toastify": "^11.0.2",
+    "web-vitals": "^2.1.4",
+    "nth-check": "^2.1.1"
+  },
+  "overrides": {
+    "nth-check": "^2.1.1",
+    "postcss": "^8.4.38"
   },
   "scripts": {
     "start": "react-scripts start",
