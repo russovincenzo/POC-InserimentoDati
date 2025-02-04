@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Typeahead } from 'react-bootstrap-typeahead';
 
 function SoftwareList() {
     const [softwares, setSoftwares] = useState([]);
@@ -31,12 +32,22 @@ function SoftwareList() {
     });
     const [isEditing, setIsEditing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-
+    const [unitsOptions, setUnitsOptions] = useState([]); // State for units suggestions
     const API_URL = "/software";
+    const UNITS_API_URL = "/units";
 
     useEffect(() => {
         fetchSoftwares();
     }, []);
+
+    const fetchUnits = async (query = "") => {
+        try {
+            const response = await axios.get(`${UNITS_API_URL}?query=${query}`);
+            setUnitsOptions(response.data);
+        } catch (error) {
+            handleServerError("Errore nel recupero delle unità", error);
+        }
+    };
 
     const fetchSoftwares = async (query = "") => {
         try {
@@ -71,6 +82,17 @@ function SoftwareList() {
                 error
             );
         }
+    };
+
+    const handleTypeaheadChange = (selected, e) => {
+        setFormData(prev => ({
+            ...prev,
+            units: selected.length > 0 && selected[0].customOption ? selected[0].label : selected[0] // Capture input as new option
+        }));
+    };
+
+    const handleUnitsInputChange = (query) => {
+        fetchUnits(query); // Fetch units based on the input value
     };
 
     const handleSearch = (e) => {
@@ -249,12 +271,16 @@ function SoftwareList() {
                     </div>
                     <div className="col">
                         <label className="form-label">Units</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            name="units"
-                            value={formData.units}
-                            onChange={handleChange}
+                        <Typeahead
+                            id="units-typeahead"
+                            onChange={handleTypeaheadChange}
+                            onInputChange={handleUnitsInputChange}
+                            options={unitsOptions}
+                            selected={formData.units ? [formData.units] : []}
+                            placeholder="Scegli un'unità..."
+                            allowNew
+                            newSelectionPrefix="Aggiungi: "
+                            minLength={1} // Specify when to start showing suggestions
                         />
                     </div>
                 </div>
@@ -398,6 +424,7 @@ function SoftwareList() {
                         <th>ID</th>
                         <th>Software ID</th>
                         <th>Name</th>
+                        <th>Units</th>
                         <th>Manufacturer</th>
                         <th>Azioni</th>
                     </tr>
@@ -408,6 +435,7 @@ function SoftwareList() {
                             <td>{software.id}</td>
                             <td>{software.softwareId}</td>
                             <td>{software.name}</td>
+                            <td>{software.units}</td>
                             <td>{software.manufacturer}</td>
                             <td>
                                 <button

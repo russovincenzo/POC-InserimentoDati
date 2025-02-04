@@ -95,6 +95,18 @@ app.MapDelete("/software/{id:int}", async (int id, [FromServices] SoftwareDbCont
     })
     .WithOpenApi();
 
+app.MapGet("/units", async (string query, [FromServices] SoftwareDbContext context) =>
+    {
+        var units = await context.Softwares
+            .Where(s => s.Units.Contains(query))
+            .Select(s => s.Units)
+            .Distinct()
+            .ToListAsync();
+        return Results.Ok(units);
+    })
+    .WithOpenApi();
+
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SoftwareDbContext>();
