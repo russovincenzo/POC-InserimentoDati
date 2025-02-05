@@ -18,7 +18,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
   
-	<Target Name="BuildReactApp" AfterTargets="Build" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+	<Target Name="BuildReactApp" BeforeTargets="Build" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
 		<Message Importance="high" Text="Current directory: $(MSBuildProjectDirectory)" />
 		<Exec WorkingDirectory="$(MSBuildProjectDirectory)\..\frontend" Command="npm install &amp;&amp; npm run build" />
 	</Target>

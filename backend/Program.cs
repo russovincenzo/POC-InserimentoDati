@@ -5,18 +5,28 @@ using POC_InserimentoDati.SoftwareApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+builder.Services.AddHttpLogging(o =>
+{
+    o.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
+});
+builder.Logging.SetMinimumLevel(LogLevel.Trace);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDirectoryBrowser();
 builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(builder.Configuration.BuildConnectionString()));
 var app = builder.Build();
 
 // Servire i file statici
-app.UseStaticFiles(); // Abilita la distribuzione dei file statici dalla cartella "wwwroot"
-
+// app.UseStaticFiles(); // Abilita la distribuzione dei file statici dalla cartella "wwwroot"
 // Imposta una route di fallback per servire "index.html"
-app.MapFallbackToFile("index.html");
+// app.UseDirectoryBrowser();
+// app.MapFallbackToFile("index.html");
+app.UseFileServer(enableDirectoryBrowsing: false);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -24,6 +34,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
+    app.UseHttpLogging();
 }
 
 app.MapGet("/software", async (string query, [FromServices] SoftwareDbContext context) =>
