@@ -22,5 +22,4 @@
 		<Message Importance="high" Text="Current directory: $(MSBuildProjectDirectory)" />
 		<Exec WorkingDirectory="$(MSBuildProjectDirectory)\..\frontend" Command="npm install &amp;&amp; npm run build" />
 	</Target>
-
 </Project>
