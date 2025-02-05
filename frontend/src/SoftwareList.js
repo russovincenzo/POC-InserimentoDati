@@ -3,6 +3,18 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Typeahead } from 'react-bootstrap-typeahead';
+import {
+    Button,
+    ProgressBar,
+    Form,
+    Row,
+    Col,
+    FloatingLabel,
+    Table
+} from 'react-bootstrap';
+import { FaEdit, FaTrash } from 'react-icons/fa'; // Importa icone FontAwesome
+
+const FORM_CACHE_KEY = 'softwareFormData';
 
 function SoftwareList() {
     const [softwares, setSoftwares] = useState([]);
@@ -30,15 +42,31 @@ function SoftwareList() {
         storage: "",
         documentation: ""
     });
+    const getUrl = (endpoint) => {
+        return process.env.NODE_ENV === 'development' ? "https://localhost:7065" + endpoint : endpoint;
+    }
+
     const [isEditing, setIsEditing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [unitsOptions, setUnitsOptions] = useState([]); // State for units suggestions
-    const API_URL = "/software";
-    const UNITS_API_URL = "/units";
+    const [unitsOptions, setUnitsOptions] = useState([]);
+    const API_URL = getUrl("/software");
+    const UNITS_API_URL = getUrl("/units");
+    const [currentStep, setCurrentStep] = useState(1);
 
+    
     useEffect(() => {
         fetchSoftwares();
+        // Load form data from localStorage on component mount
+        const cachedData = localStorage.getItem(FORM_CACHE_KEY);
+        if (cachedData) {
+            setFormData(JSON.parse(cachedData));
+        }
     }, []);
+
+    useEffect(() => {
+        // Update localStorage whenever formData changes
+        localStorage.setItem(FORM_CACHE_KEY, JSON.stringify(formData));
+    }, [formData]);
 
     const fetchUnits = async (query = "") => {
         try {
@@ -76,6 +104,9 @@ function SoftwareList() {
             }
             resetFormData();
             fetchSoftwares();
+            // Remove data from localStorage after successful submission
+            localStorage.removeItem(FORM_CACHE_KEY);
+            toast.success("Software salvato con successo!", { autoClose: 3000 }); // Show success toast
         } catch (error) {
             handleServerError(
                 isEditing ? "Errore nell'aggiornamento del software" : "Errore nella creazione del software",
@@ -87,19 +118,18 @@ function SoftwareList() {
     const handleTypeaheadChange = (selected, e) => {
         setFormData(prev => ({
             ...prev,
-            units: selected.length > 0 && selected[0].customOption ? selected[0].label : selected[0] // Capture input as new option
+            units: selected.length > 0 && selected[0].customOption ? selected[0].label : selected[0]
         }));
     };
 
     const handleUnitsInputChange = (query) => {
-        fetchUnits(query); // Fetch units based on the input value
+        fetchUnits(query);
     };
 
     const handleSearch = (e) => {
         e.preventDefault();
         fetchSoftwares(searchQuery);
     };
-
 
     const handleEdit = (software) => {
         setIsEditing(true);
@@ -149,128 +179,239 @@ function SoftwareList() {
         });
     };
 
+    const nextStep = () => {
+        setCurrentStep(currentStep + 1);
+    };
+
+    const prevStep = () => {
+        setCurrentStep(currentStep - 1);
+    };
+
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return <StepOne formData={formData} handleChange={handleChange} />;
+            case 2:
+                return (
+                    <StepTwo
+                        formData={formData}
+                        handleChange={handleChange}
+                        unitsOptions={unitsOptions}
+                        handleTypeaheadChange={handleTypeaheadChange}
+                        handleUnitsInputChange={handleUnitsInputChange}
+                    />
+                );
+            case 3:
+                return <StepThree formData={formData} handleChange={handleChange} />;
+            default:
+                return null;
+        }
+    };
+
+    const stepPercentage = ((currentStep - 1) / 3) * 100;
+
     return (
         <div className="container my-4">
             <h1>SOUP Manager</h1>
             <ToastContainer />
+
             {/* Form di ricerca */}
-            <form onSubmit={handleSearch} className="my-4">
-                <div className="input-group mb-3">
-                    <input
+            <Form onSubmit={handleSearch} className="my-4">
+                <Form.Group className="mb-3">
+                    <Form.Control
                         type="text"
-                        className="form-control"
                         placeholder="Cerca software..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <button className="btn btn-primary" type="submit">
-                        Cerca
-                    </button>
+                </Form.Group>
+                <Button variant="primary" type="submit">
+                    Cerca
+                </Button>
+            </Form>
+            <ProgressBar now={stepPercentage} label={`Step ${currentStep} of 3`} />
+
+            <Form onSubmit={handleSubmit} className="my-4">
+                {/* Fixed height container for the step content */}
+                <div style={{ minHeight: '400px' }}>
+                    {renderStepContent()}
                 </div>
-            </form>
-            <form onSubmit={handleSubmit} className="my-4">
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Software ID</label>
-                        <input
+
+                <div className="d-flex justify-content-between">
+                    {currentStep > 1 && (
+                        <Button variant="secondary" onClick={prevStep}>
+                            Indietro
+                        </Button>
+                    )}
+                    {currentStep < 3 && (
+                        <Button variant="primary" onClick={nextStep}>
+                            Avanti
+                        </Button>
+                    )}
+                    {currentStep === 3 && (
+                        <Button type="submit" variant="success">
+                            {isEditing ? "Salva Modifiche" : "Aggiungi Software"}
+                        </Button>
+                    )}
+                </div>
+            </Form>
+
+            <Table striped bordered hover responsive> {/* Aggiunto 'responsive' per scroll orizzontale su schermi piccoli */}
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Software ID</th>
+                        <th>Name</th>
+                        <th>Units</th>
+                        <th>Manufacturer</th>
+                        <th className="text-center">Azioni</th> {/* Allinea le azioni al centro */}
+                    </tr>
+                </thead>
+                <tbody>
+                    {softwares.map((software) => (
+                        <tr key={software.id}>
+                            <td>{software.id}</td>
+                            <td>{software.softwareId}</td>
+                            <td>{software.name}</td>
+                            <td>{software.units}</td>
+                            <td>{software.manufacturer}</td>
+                            <td className="text-center">
+                                <Button variant="outline-warning" size="sm" className="me-1" onClick={() => handleEdit(software)}>
+                                    <FaEdit /> {/* Icona Modifica */}
+                                </Button>
+                                <Button variant="outline-danger" size="sm" onClick={() => handleDelete(software.id)}>
+                                    <FaTrash /> {/* Icona Elimina */}
+                                </Button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </Table>
+        </div>
+    );
+}
+
+function StepOne({ formData, handleChange }) {
+    return (
+        <Form>
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="softwareIdLabel" label="Software ID">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="softwareId"
                             value={formData.softwareId}
                             onChange={handleChange}
+                            placeholder="Software ID"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Name</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="nameLabel" label="Name">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
+                            placeholder="Name"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Manufacturer</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="manufacturerLabel" label="Manufacturer">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="manufacturer"
                             value={formData.manufacturer}
                             onChange={handleChange}
+                            placeholder="Manufacturer"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Website</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="websiteLabel" label="Website">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="website"
                             value={formData.website}
                             onChange={handleChange}
+                            placeholder="Website"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
+        </Form>
+    );
+}
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">License</label>
-                        <input
+function StepTwo({ formData, handleChange, unitsOptions, handleTypeaheadChange, handleUnitsInputChange }) {
+    return (
+        <Form>
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="licenseLabel" label="License">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="license"
                             value={formData.license}
                             onChange={handleChange}
+                            placeholder="License"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Version</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="versionLabel" label="Version">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="version"
                             value={formData.version}
                             onChange={handleChange}
+                            placeholder="Version"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Release Date</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="releaseDateLabel" label="Release Date">
+                        <Form.Control
                             type="date"
-                            className="form-control"
                             name="releaseDate"
                             value={formData.releaseDate}
                             onChange={handleChange}
+                            placeholder="Release Date"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">End of Support Date</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="endOfSupportDateLabel" label="End of Support Date">
+                        <Form.Control
                             type="date"
-                            className="form-control"
                             name="endOfSupportDate"
                             value={formData.endOfSupportDate}
                             onChange={handleChange}
+                            placeholder="End of Support Date"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Programming Language</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="programmingLanguageLabel" label="Programming Language">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="programmingLanguage"
                             value={formData.programmingLanguage}
                             onChange={handleChange}
+                            placeholder="Programming Language"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Units</label>
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <Form.Group controlId="unitsLabel">
+                        <Form.Label>Units</Form.Label>
                         <Typeahead
                             id="units-typeahead"
                             onChange={handleTypeaheadChange}
@@ -282,180 +423,155 @@ function SoftwareList() {
                             newSelectionPrefix="Aggiungi: "
                             minLength={1} // Specify when to start showing suggestions
                         />
-                    </div>
-                </div>
+                    </Form.Group>
+                </Col>
+            </Row>
+        </Form>
+    );
+}
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Hardware Specifications</label>
-                        <input
+function StepThree({ formData, handleChange }) {
+    return (
+        <Form>
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="hardwareSpecificationsLabel" label="Hardware Specifications">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="hardwareSpecifications"
                             value={formData.hardwareSpecifications}
                             onChange={handleChange}
+                            placeholder="Hardware Specifications"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Software Specifications</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="softwareSpecificationsLabel" label="Software Specifications">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="softwareSpecifications"
                             value={formData.softwareSpecifications}
                             onChange={handleChange}
+                            placeholder="Software Specifications"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Installation Procedures</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="installationProceduresLabel" label="Installation Procedures">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="installationProcedures"
                             value={formData.installationProcedures}
                             onChange={handleChange}
+                            placeholder="Installation Procedures"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Configuration Requirements</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="configurationRequirementsLabel" label="Configuration Requirements">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="configurationRequirements"
                             value={formData.configurationRequirements}
                             onChange={handleChange}
+                            placeholder="Configuration Requirements"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Training Requirements</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="trainingRequirementsLabel" label="Training Requirements">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="trainingRequirements"
                             value={formData.trainingRequirements}
                             onChange={handleChange}
+                            placeholder="Training Requirements"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Design Limitations</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="designLimitationsLabel" label="Design Limitations">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="designLimitations"
                             value={formData.designLimitations}
                             onChange={handleChange}
+                            placeholder="Design Limitations"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Maintenance Procedures</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="maintenanceProceduresLabel" label="Maintenance Procedures">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="maintenanceProcedures"
                             value={formData.maintenanceProcedures}
                             onChange={handleChange}
+                            placeholder="Maintenance Procedures"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Function</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="functionLabel" label="Function">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="function"
                             value={formData.function}
                             onChange={handleChange}
+                            placeholder="Function"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Measures To Prevent Incorrect Version</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="measuresToPreventIncorrectVersionLabel" label="Measures To Prevent Incorrect Version">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="measuresToPreventIncorrectVersion"
                             value={formData.measuresToPreventIncorrectVersion}
                             onChange={handleChange}
+                            placeholder="Measures To Prevent Incorrect Version"
                         />
-                    </div>
-                    <div className="col">
-                        <label className="form-label">Storage</label>
-                        <input
+                    </FloatingLabel>
+                </Col>
+                <Col>
+                    <FloatingLabel controlId="storageLabel" label="Storage">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="storage"
                             value={formData.storage}
                             onChange={handleChange}
+                            placeholder="Storage"
                         />
-                    </div>
-                </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
 
-                <div className="row mb-3">
-                    <div className="col">
-                        <label className="form-label">Documentation</label>
-                        <input
+            <Row className="mb-3">
+                <Col>
+                    <FloatingLabel controlId="documentationLabel" label="Documentation">
+                        <Form.Control
                             type="text"
-                            className="form-control"
                             name="documentation"
                             value={formData.documentation}
                             onChange={handleChange}
+                            placeholder="Documentation"
                         />
-                    </div>
-                </div>
-
-                <button type="submit" className="btn btn-primary">
-                    {isEditing ? "Salva Modifiche" : "Aggiungi Software"}
-                </button>
-            </form>
-
-            <table className="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Software ID</th>
-                        <th>Name</th>
-                        <th>Units</th>
-                        <th>Manufacturer</th>
-                        <th>Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {softwares.map((software) => (
-                        <tr key={software.id}>
-                            <td>{software.id}</td>
-                            <td>{software.softwareId}</td>
-                            <td>{software.name}</td>
-                            <td>{software.units}</td>
-                            <td>{software.manufacturer}</td>
-                            <td>
-                                <button
-                                    className="btn btn-warning btn-sm me-2"
-                                    onClick={() => handleEdit(software)}
-                                >
-                                    Modifica
-                                </button>
-                                <button
-                                    className="btn btn-danger btn-sm"
-                                    onClick={() => handleDelete(software.id)}
-                                >
-                                    Elimina
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </FloatingLabel>
+                </Col>
+            </Row>
+        </Form>
     );
 }
 

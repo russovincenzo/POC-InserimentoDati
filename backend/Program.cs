@@ -18,6 +18,7 @@ builder.Logging.SetMinimumLevel(LogLevel.Trace);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDirectoryBrowser();
+builder.Services.AddCors();
 builder.Services.AddDbContext<SoftwareDbContext>(options => options.UseNpgsql(builder.Configuration.BuildConnectionString()));
 var app = builder.Build();
 
@@ -117,6 +118,12 @@ app.MapGet("/units", async (string query, [FromServices] SoftwareDbContext conte
     })
     .WithOpenApi();
 
+app.UseCors(c =>
+{
+    c.WithOrigins("http://localhost:3001", "http://localhost:3000")
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+});
 
 using (var scope = app.Services.CreateScope())
 {
