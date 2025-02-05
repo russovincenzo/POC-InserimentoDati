@@ -35,9 +35,6 @@ RUN dotnet restore
 # Copia tutto il progetto
 COPY . .
 
-# Copia i file buildati del frontend nella cartella wwwroot
-COPY --from=build-frontend /app/backend/wwwroot/ ./app/wwwroot
-
 # Build del backend
 RUN dotnet publish -c Release -o out
 
@@ -49,6 +46,9 @@ WORKDIR /app
 
 # Copia il risultato della build del backend
 COPY --from=build-backend /app/backend/out ./
+
+# Copia i file buildati del frontend nella cartella wwwroot
+COPY --from=build-frontend /app/backend/wwwroot ./wwwroot
 
 # Imposta gli URL per HTTP e HTTPS
 ENV ASPNETCORE_URLS="https://0.0.0.0:5001;http://0.0.0.0:5000"
